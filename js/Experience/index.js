@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import galaxyFragment from './shaders/galaxy/fragment.glsl'
 import galaxyVertex from './shaders/galaxy/vertex.glsl'
 
-import particleTextureSrc from '../../assets/circle_05.png'
+import particleTextureSrc from '../../assets/circle_05_small.png'
 
 import { lerp } from './utils/math'
 
@@ -13,6 +13,8 @@ class Experience {
     this.container = options.domElement
     this.scene = new THREE.Scene()
     this.textureLoader = new THREE.TextureLoader()
+    this.time = 0.0
+
     this.init()
   }
 
@@ -144,18 +146,27 @@ class Experience {
       // wireframe: true,
       transparent: true,
       depthTest: false,
+      // blending: THREE.AdditiveBlending,
       vertexShader: galaxyVertex,
       fragmentShader: galaxyFragment,
     })
 
     this.geometry = new THREE.PlaneBufferGeometry(1, 1, 1, 1)
-    this.points = new THREE.Mesh(this.galaxyGeometry, this.material)
-    this.scene.add(this.points)
+    this.galaxy = new THREE.Mesh(this.galaxyGeometry, this.material)
+    this.scene.add(this.galaxy)
   }
 
   //////////////////////////////////////////////////////////////////////////////
 
-  update() {
+  update(_) {
+    // Update time
+    this.time += 0.05
+
+    // Update galaxy
+    if (this.galaxy) {
+      this.galaxy.material.uniforms.uTime.value = this.time * 0.5
+    }
+
     // Update controls
     this.controls.update()
 
