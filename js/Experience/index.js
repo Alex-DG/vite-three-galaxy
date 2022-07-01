@@ -100,7 +100,7 @@ class Experience {
   async setGalaxy() {
     const count = 10000
     const minRadius = 0.5
-    const maxRadius = minRadius * 4
+    const maxRadius = 1
     const positions = new Float32Array(count * 3)
     const particleTexture = await this.textureLoader.loadAsync(
       particleTextureSrc
