@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
 import galaxyFragment from './shaders/galaxy/fragment.glsl'
 import galaxyVertex from './shaders/galaxy/vertex.glsl'
+import { lerp } from './utils/math'
 
 class Experience {
   constructor(options) {
@@ -94,6 +95,9 @@ class Experience {
 
   setGalaxy() {
     const count = 10000
+    const minRadius = 0.5
+    const maxRadius = minRadius * 4
+    const positions = new Float32Array(count * 3)
 
     this.particlesGeometry = new THREE.PlaneBufferGeometry()
 
@@ -105,16 +109,18 @@ class Experience {
     this.galaxyGeometry.instanceCount = count
     this.galaxyGeometry.index = this.particlesGeometry.index
 
-    const positions = new Float32Array(count * 3)
     for (let i = 0; i < count; i++) {
-      const x = (Math.random() - 0.5) * 5.5
-      const y = (Math.random() - 0.5) * 5.5
-      const z = (Math.random() - 0.5) * 5.5
+      const theta = Math.random() * Math.PI * 2 // angle
+      const radius = lerp(minRadius, maxRadius, Math.random())
+
+      const x = radius * Math.sin(theta)
+      const y = (Math.random() - 0.5) * 0.05
+      const z = radius * Math.cos(theta)
       positions.set([x, y, z], i * 3)
     }
 
     this.galaxyGeometry.setAttribute(
-      'positions',
+      'aPositions',
       new THREE.InstancedBufferAttribute(positions, 3, false)
     )
 
