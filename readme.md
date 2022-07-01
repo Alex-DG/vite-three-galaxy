@@ -1,9 +1,5 @@
 # Vite Three Galaxy
 
-Quick and light three.js starter project made with vite
-
-[Live demo](https://vite-three-starter.vercel.app/)
-
 ## Setup
 
 Run the following commands:
