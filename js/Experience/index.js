@@ -3,12 +3,16 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
 import galaxyFragment from './shaders/galaxy/fragment.glsl'
 import galaxyVertex from './shaders/galaxy/vertex.glsl'
+
+import particleTextureSrc from '../../assets/circle_05.png'
+
 import { lerp } from './utils/math'
 
 class Experience {
   constructor(options) {
-    this.scene = new THREE.Scene()
     this.container = options.domElement
+    this.scene = new THREE.Scene()
+    this.textureLoader = new THREE.TextureLoader()
     this.init()
   }
 
@@ -93,11 +97,14 @@ class Experience {
     window.addEventListener('resize', this.resize)
   }
 
-  setGalaxy() {
+  async setGalaxy() {
     const count = 10000
     const minRadius = 0.5
     const maxRadius = minRadius * 4
     const positions = new Float32Array(count * 3)
+    const particleTexture = await this.textureLoader.loadAsync(
+      particleTextureSrc
+    )
 
     this.particlesGeometry = new THREE.PlaneBufferGeometry()
 
@@ -131,10 +138,12 @@ class Experience {
       side: THREE.DoubleSide,
       uniforms: {
         uTime: { value: 0 },
+        uTexture: { value: particleTexture },
         uResolution: { value: new THREE.Vector4() },
       },
       // wireframe: true,
-      // transparent: true,
+      transparent: true,
+      depthTest: false,
       vertexShader: galaxyVertex,
       fragmentShader: galaxyFragment,
     })

@@ -8,7 +8,7 @@ attribute vec3 aPositions;
 
 float PI = 3.141592653589793238;
 
-float particleSpread = 0.01;
+float particleSpread = 0.025;
 
 void main() {
   // Calculate particles mesh position
