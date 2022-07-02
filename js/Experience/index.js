@@ -164,7 +164,7 @@ class Experience {
 
     // Update galaxy
     if (this.galaxy) {
-      this.galaxy.material.uniforms.uTime.value = this.time * 0.5
+      this.galaxy.material.uniforms.uTime.value = this.time * 0.6
     }
 
     // Update controls

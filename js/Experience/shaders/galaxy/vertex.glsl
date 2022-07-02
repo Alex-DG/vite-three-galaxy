@@ -6,40 +6,51 @@ varying vec3 vPosition;
 
 attribute vec3 aPositions;
 
-float PI = 3.141592653589793238;
-
-float particleSpread = 0.045;
-
-vec2 rotate(vec2 v, float a) {
-	float s = sin(a);
-	float c = cos(a);
-	mat2 m = mat2(c, -s, s, c);
-	return m * v;
-}
-
-mat3 rotation3dY(float a) {
-	float s = sin(a);
-	float c = cos(a);
-	
-	return mat3(
-    c, 0.0, -s,
-    0.0, 1.0, 0.0,
-    s, 0.0, c
-  );
-}
-
-//	Classic Perlin 3D Noise 
-//	by Stefan Gustavson
 //
-vec4 permute(vec4 x){return mod(((x*34.0)+1.0)*x, 289.0);}
-vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}
-vec3 fade(vec3 t) {return t*t*t*(t*(t*6.0-15.0)+10.0);}
+// GLSL textureless classic 3D noise "cnoise",
+// with an RSL-style periodic variant "pnoise".
+// Author:  Stefan Gustavson (stefan.gustavson@liu.se)
+// Version: 2011-10-11
+//
+// Many thanks to Ian McEwan of Ashima Arts for the
+// ideas for permutation and gradient selection.
+//
+// Copyright (c) 2011 Stefan Gustavson. All rights reserved.
+// Distributed under the MIT license. See LICENSE file.
+// https://github.com/ashima/webgl-noise
+//
 
-float cnoise(vec3 P){
+vec3 mod289(vec3 x)
+{
+  return x - floor(x * (1.0 / 289.0)) * 289.0;
+}
+
+vec4 mod289(vec4 x)
+{
+  return x - floor(x * (1.0 / 289.0)) * 289.0;
+}
+
+vec4 permute(vec4 x)
+{
+  return mod289(((x*34.0)+1.0)*x);
+}
+
+vec4 taylorInvSqrt(vec4 r)
+{
+  return 1.79284291400159 - 0.85373472095314 * r;
+}
+
+vec3 fade(vec3 t) {
+  return t*t*t*(t*(t*6.0-15.0)+10.0);
+}
+
+// Classic Perlin noise
+float cnoise(vec3 P)
+{
   vec3 Pi0 = floor(P); // Integer part for indexing
   vec3 Pi1 = Pi0 + vec3(1.0); // Integer part + 1
-  Pi0 = mod(Pi0, 289.0);
-  Pi1 = mod(Pi1, 289.0);
+  Pi0 = mod289(Pi0);
+  Pi1 = mod289(Pi1);
   vec3 Pf0 = fract(P); // Fractional part for interpolation
   vec3 Pf1 = Pf0 - vec3(1.0); // Fractional part - 1.0
   vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);
@@ -51,16 +62,16 @@ float cnoise(vec3 P){
   vec4 ixy0 = permute(ixy + iz0);
   vec4 ixy1 = permute(ixy + iz1);
 
-  vec4 gx0 = ixy0 / 7.0;
-  vec4 gy0 = fract(floor(gx0) / 7.0) - 0.5;
+  vec4 gx0 = ixy0 * (1.0 / 7.0);
+  vec4 gy0 = fract(floor(gx0) * (1.0 / 7.0)) - 0.5;
   gx0 = fract(gx0);
   vec4 gz0 = vec4(0.5) - abs(gx0) - abs(gy0);
   vec4 sz0 = step(gz0, vec4(0.0));
   gx0 -= sz0 * (step(0.0, gx0) - 0.5);
   gy0 -= sz0 * (step(0.0, gy0) - 0.5);
 
-  vec4 gx1 = ixy1 / 7.0;
-  vec4 gy1 = fract(floor(gx1) / 7.0) - 0.5;
+  vec4 gx1 = ixy1 * (1.0 / 7.0);
+  vec4 gy1 = fract(floor(gx1) * (1.0 / 7.0)) - 0.5;
   gx1 = fract(gx1);
   vec4 gz1 = vec4(0.5) - abs(gx1) - abs(gy1);
   vec4 sz1 = step(gz1, vec4(0.0));
@@ -99,25 +110,53 @@ float cnoise(vec3 P){
   vec3 fade_xyz = fade(Pf0);
   vec4 n_z = mix(vec4(n000, n100, n010, n110), vec4(n001, n101, n011, n111), fade_xyz.z);
   vec2 n_yz = mix(n_z.xy, n_z.zw, fade_xyz.y);
-  float n_xyz = mix(n_yz.x, n_yz.y, fade_xyz.x); 
+  float n_xyz = mix(n_yz.x, n_yz.y, fade_xyz.x);
   return 2.2 * n_xyz;
+}
+
+mat3 rotation3dY(float angle) {
+	float s = sin(angle);
+	float c = cos(angle);
+
+	return mat3(
+		c, 0.0, -s,
+		0.0, 1.0, 0.0,
+		s, 0.0, c
+	);
+}
+
+float saturate(float x) {
+  return clamp(x, 0.0, 1.0);
+}
+
+vec3 curl_noise(vec3 p) {
+  const float step = 0.01;
+  float ddx = cnoise(p + vec3(step, 0.0, 0.0)) - cnoise(p - vec3(step, 0.0, 0.0));
+  float ddy = cnoise(p + vec3(0.0, step, 0.0)) - cnoise(p - vec3(0.0,step, 0.0));
+  float ddz = cnoise(p + vec3(0.0, 0.0, step)) - cnoise(p - vec3(0.0, 0.0, step));
+
+  const float divisor = 1.0 / (2.0 * step);
+  return (vec3(ddy - ddz, ddz - ddx, ddx - ddy) * divisor);
 }
 
 vec3 fbm_vec3(vec3 p, float frequency, float offset) {
   return vec3(
-    cnoise(p * vec3(offset) * frequency),
-    cnoise(p * vec3(offset + 20.0) * frequency),
-    cnoise(p * vec3(offset + 30.0) * frequency)
+    cnoise((p + vec3(offset)) * frequency),
+    cnoise((p + vec3(offset + 20.0)) * frequency),
+    cnoise((p + vec3(offset + 30.0)) * frequency)
   );
 }
 
+
 vec3 getOffset(vec3 p) {
   float twist_scale = cnoise(aPositions) * 0.5 + 0.5;
-  vec3 tempPosition = rotation3dY(uTime * (0.1 + 0.5 * twist_scale) + length(aPositions.xz)) * p;
+  vec3 tempPosition = rotation3dY(uTime * (0.5 + 0.5 * twist_scale) + length(aPositions.xz)) * p;
   vec3 offset = fbm_vec3(aPositions, 0.5, 0.0);
   
-  return offset * 0.1;
+  return offset * 0.5;
 }
+
+float particleSpread = 0.05;
 
 void main() {
   // Calculate particle size
@@ -126,6 +165,7 @@ void main() {
   float rotationTime = uTime * 0.3 * (0.1 + 0.5 * particleSize);
   vec3 worldPosition = rotation3dY(rotationTime) * aPositions;
 
+  // Create spinning effect with randomness
   vec3 offset0 = getOffset(worldPosition);
   vec3 offset = fbm_vec3(worldPosition + offset0, 0.0, 0.0);
   vec3 finalOffset = offset + offset0;
@@ -139,6 +179,5 @@ void main() {
 
   gl_Position = projectionMatrix * viewPosition;
 
-   
   vUv = position.xy + vec2(0.5);
 }
