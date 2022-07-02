@@ -15,19 +15,41 @@ class Experience {
     this.textureLoader = new THREE.TextureLoader()
     this.time = 0.0
 
+    this.materials = []
+    this.layers = [
+      {
+        minRadius: 0.3,
+        maxRadius: 1.5,
+        color: '#f7b373',
+        size: 1,
+        count: 10000,
+      },
+      {
+        minRadius: 0.3,
+        maxRadius: 1.5,
+        color: '#88b3ce',
+        size: 0.6,
+        count: 10000,
+      },
+    ]
+
     this.init()
   }
 
   /**
    * Experience setup
    */
-  init() {
+  async init() {
     this.bind()
+
+    await this.setTexture()
+
     this.setSizes()
     this.setRenderer()
     this.setCamera()
     this.setGalaxy()
     this.setResize()
+
     this.update()
 
     console.log('🤖', 'Experience initialized')
@@ -52,61 +74,11 @@ class Experience {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   }
 
-  //////////////////////////////////////////////////////////////////////////////
-
-  setSizes() {
-    this.sizes = {
-      width: this.container.offsetWidth,
-      height: this.container.offsetHeight || window.innerHeight,
-    }
-  }
-
-  setCamera() {
-    // Base camera
-    this.camera = new THREE.PerspectiveCamera(
-      75,
-      this.sizes.width / this.sizes.height,
-      0.1,
-      100
-    )
-    this.camera.position.set(0, 2, 2)
-    this.scene.add(this.camera)
-
-    // Controls
-    this.controls = new OrbitControls(this.camera, this.renderer.domElement)
-    this.controls.enableDamping = true
-  }
-
-  setRenderer() {
-    this.renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      alpha: true,
-    })
-    this.renderer.setSize(this.sizes.width, this.sizes.height)
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-    this.container.appendChild(this.renderer.domElement)
-  }
-
-  setCube() {
-    const cube = new THREE.Mesh(
-      new THREE.BoxGeometry(1, 1, 1),
-      new THREE.MeshNormalMaterial()
-    )
-    this.scene.add(cube)
-  }
-
-  setResize() {
-    window.addEventListener('resize', this.resize)
-  }
-
-  async setGalaxy() {
-    const count = 10000
-    const minRadius = 0.5
-    const maxRadius = 1
+  addLayer(layer) {
+    const count = layer.count
+    const minRadius = layer.minRadius
+    const maxRadius = layer.maxRadius
     const positions = new Float32Array(count * 3)
-    const particleTexture = await this.textureLoader.loadAsync(
-      particleTextureSrc
-    )
 
     this.particlesGeometry = new THREE.PlaneBufferGeometry()
 
@@ -133,39 +105,104 @@ class Experience {
       new THREE.InstancedBufferAttribute(positions, 3, false)
     )
 
-    this.material = new THREE.ShaderMaterial({
+    const material = new THREE.ShaderMaterial({
       extensions: {
         derivatives: '#extension GL_OES_standard_derivatives : enable',
       },
       side: THREE.DoubleSide,
       uniforms: {
         uTime: { value: 0 },
-        uTexture: { value: particleTexture },
+        uSize: { value: layer.size },
+        uTexture: { value: this.particleTexture },
+        uColor: { value: new THREE.Color(layer.color) },
         uResolution: { value: new THREE.Vector4() },
       },
       // wireframe: true,
       transparent: true,
       depthTest: false,
-      // blending: THREE.AdditiveBlending,
+      blending: THREE.AdditiveBlending,
       vertexShader: galaxyVertex,
       fragmentShader: galaxyFragment,
     })
 
     this.geometry = new THREE.PlaneBufferGeometry(1, 1, 1, 1)
-    this.galaxy = new THREE.Mesh(this.galaxyGeometry, this.material)
+    this.galaxy = new THREE.Mesh(this.galaxyGeometry, material)
+
+    this.materials.push(material)
     this.scene.add(this.galaxy)
   }
 
   //////////////////////////////////////////////////////////////////////////////
+
+  async setTexture() {
+    const texture = await this.textureLoader.loadAsync(particleTextureSrc)
+    this.particleTexture = texture
+  }
+
+  setSizes() {
+    this.sizes = {
+      width: this.container.offsetWidth,
+      height: this.container.offsetHeight || window.innerHeight,
+    }
+  }
+  setCamera() {
+    // Base camera
+    this.camera = new THREE.PerspectiveCamera(
+      75,
+      this.sizes.width / this.sizes.height,
+      0.1,
+      100
+    )
+    this.camera.position.set(0, 2, 2)
+    this.scene.add(this.camera)
+
+    // Controls
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement)
+    this.controls.enableDamping = true
+  }
+  setRenderer() {
+    this.renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: true,
+    })
+    this.renderer.setSize(this.sizes.width, this.sizes.height)
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    this.container.appendChild(this.renderer.domElement)
+  }
+  setCube() {
+    const cube = new THREE.Mesh(
+      new THREE.BoxGeometry(1, 1, 1),
+      new THREE.MeshNormalMaterial()
+    )
+    this.scene.add(cube)
+  }
+  setResize() {
+    window.addEventListener('resize', this.resize)
+  }
+
+  setGalaxy() {
+    this.layers.forEach((layer) => this.addLayer(layer))
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  updateGalaxy() {
+    if (this.galaxy) {
+      this.materials.forEach((material) => {
+        material.uniforms.uTime.value = this.time * 0.5
+      })
+    }
+  }
 
   update(_) {
     // Update time
     this.time += 0.05
 
     // Update galaxy
-    if (this.galaxy) {
-      this.galaxy.material.uniforms.uTime.value = this.time * 0.6
-    }
+    this.updateGalaxy()
+    // if (this.galaxy) {
+    //   this.galaxy.material.uniforms.uTime.value = this.time * 0.6
+    // }
 
     // Update controls
     this.controls.update()

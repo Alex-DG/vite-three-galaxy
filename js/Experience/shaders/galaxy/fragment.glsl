@@ -1,4 +1,5 @@
 uniform float uTime;
+uniform vec3 uColor;
 uniform vec4 uResolution;
 uniform sampler2D uTexture;
 
@@ -10,5 +11,8 @@ float PI = 3.141592653589793238;
 void main()	{
 	vec4 particleTexture = texture2D(uTexture, vUv);
 
-	gl_FragColor = vec4(vec3(1.0), particleTexture.r);
+	float distanceToCenter = distance(gl_PointCoord, vec2(0.455));
+    float strength = 0.05 / distanceToCenter - 0.1;
+
+	gl_FragColor = vec4(uColor, particleTexture.r * strength);
 }

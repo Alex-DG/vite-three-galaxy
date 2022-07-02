@@ -1,4 +1,5 @@
 uniform float uTime;
+uniform float uSize;
 uniform vec2 uPixels;
 
 varying vec2 vUv;
@@ -153,7 +154,7 @@ vec3 getOffset(vec3 p) {
   vec3 tempPosition = rotation3dY(uTime * (0.5 + 0.5 * twist_scale) + length(aPositions.xz)) * p;
   vec3 offset = fbm_vec3(aPositions, 0.5, 0.0);
   
-  return offset * 0.5;
+  return offset * 0.25;
 }
 
 float particleSpread = 0.05;
@@ -175,7 +176,7 @@ void main() {
 
   // Add position
   vec4 viewPosition = viewMatrix * vec4(particlesPosition, 1.0);
-  viewPosition.xyz += position * (0.01 + particleSpread * particleSize);
+  viewPosition.xyz += position * uSize * (0.01 + particleSpread * particleSize);
 
   gl_Position = projectionMatrix * viewPosition;
 
