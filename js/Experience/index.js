@@ -45,6 +45,7 @@ class Experience {
     await this.setTexture()
 
     this.setSizes()
+    this.setRaycaster()
     this.setRenderer()
     this.setCamera()
     this.setGalaxy()
@@ -58,6 +59,8 @@ class Experience {
   bind() {
     this.resize = this.resize.bind(this)
     this.update = this.update.bind(this)
+
+    this.onPointerMove = this.onPointerMove.bind(this)
   }
 
   resize() {
@@ -112,6 +115,7 @@ class Experience {
       side: THREE.DoubleSide,
       uniforms: {
         uTime: { value: 0 },
+        uMouse: { value: new THREE.Vector2() },
         uSize: { value: layer.size },
         uTexture: { value: this.particleTexture },
         uColor: { value: new THREE.Color(layer.color) },
@@ -134,6 +138,29 @@ class Experience {
 
   //////////////////////////////////////////////////////////////////////////////
 
+  onPointerMove(event) {
+    // calculate pointer position in normalized device coordinates
+    // (-1 to +1) for both components
+    this.pointer.x = (event.clientX / window.innerWidth) * 2 - 1
+    this.pointer.y = -(event.clientY / window.innerHeight) * 2 + 1
+
+    // Checking up the ray with the camera and pointer position
+    this.raycaster.setFromCamera(this.pointer, this.camera)
+
+    // calculate objects intersecting the picking ray
+    const intersects = this.raycaster.intersectObjects([this.planeRay])
+    console.log({ intersects })
+    if (intersects[0]) {
+      // intersects[i].object.material.color.set(0xff0000)
+      console.log('intersects >', { intersects })
+      this.sphereRay.position.copy(intersects[0].point)
+
+      this.point.copy(intersects[0].point)
+    }
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+
   async setTexture() {
     const texture = await this.textureLoader.loadAsync(particleTextureSrc)
     this.particleTexture = texture
@@ -144,6 +171,29 @@ class Experience {
       width: this.container.offsetWidth,
       height: this.container.offsetHeight || window.innerHeight,
     }
+  }
+  setRaycaster() {
+    this.raycaster = new THREE.Raycaster()
+    this.pointer = new THREE.Vector2()
+    this.point = new THREE.Vector3()
+
+    // Debug
+    this.planeRay = new THREE.Mesh(
+      new THREE.PlaneBufferGeometry(10, 10, 10, 10).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true })
+    )
+    this.planeRay.name = 'planeRay'
+    this.planeRay.visible = false
+    this.scene.add(this.planeRay)
+
+    this.sphereRay = new THREE.Mesh(
+      new THREE.SphereBufferGeometry(0.1, 10, 10),
+      new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true })
+    )
+    this.sphereRay.name = 'sphereRay'
+    this.scene.add(this.sphereRay)
+
+    window.addEventListener('pointermove', this.onPointerMove)
   }
   setCamera() {
     // Base camera
@@ -190,6 +240,7 @@ class Experience {
     if (this.galaxy) {
       this.materials.forEach((material) => {
         material.uniforms.uTime.value = this.time * 0.5
+        material.uniforms.uMouse.value = this.point
       })
     }
   }
@@ -200,9 +251,6 @@ class Experience {
 
     // Update galaxy
     this.updateGalaxy()
-    // if (this.galaxy) {
-    //   this.galaxy.material.uniforms.uTime.value = this.time * 0.6
-    // }
 
     // Update controls
     this.controls.update()
