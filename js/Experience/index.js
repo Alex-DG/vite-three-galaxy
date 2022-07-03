@@ -19,17 +19,19 @@ class Experience {
     this.layers = [
       {
         minRadius: 0.3,
-        maxRadius: 1.5,
+        maxRadius: 1.45,
         color: '#f7b373',
         size: 1,
         count: 10000,
+        amplitude: 1,
       },
       {
         minRadius: 0.3,
         maxRadius: 1.5,
         color: '#88b3ce',
-        size: 0.6,
+        size: 0.7,
         count: 10000,
+        amplitude: 2,
       },
     ]
 
@@ -115,6 +117,7 @@ class Experience {
       side: THREE.DoubleSide,
       uniforms: {
         uTime: { value: 0 },
+        uAmplitude: { value: layer.amplitude },
         uMouse: { value: new THREE.Vector2() },
         uSize: { value: layer.size },
         uTexture: { value: this.particleTexture },
@@ -153,8 +156,7 @@ class Experience {
     if (intersects[0]) {
       // intersects[i].object.material.color.set(0xff0000)
       console.log('intersects >', { intersects })
-      this.sphereRay.position.copy(intersects[0].point)
-
+      this.sphereRay?.position.copy(intersects[0].point)
       this.point.copy(intersects[0].point)
     }
   }
@@ -177,7 +179,7 @@ class Experience {
     this.pointer = new THREE.Vector2()
     this.point = new THREE.Vector3()
 
-    // Debug
+    // Plane raycaster to catch the mouse position
     this.planeRay = new THREE.Mesh(
       new THREE.PlaneBufferGeometry(10, 10, 10, 10).rotateX(-Math.PI / 2),
       new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true })
@@ -186,12 +188,13 @@ class Experience {
     this.planeRay.visible = false
     this.scene.add(this.planeRay)
 
-    this.sphereRay = new THREE.Mesh(
-      new THREE.SphereBufferGeometry(0.1, 10, 10),
-      new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true })
-    )
-    this.sphereRay.name = 'sphereRay'
-    this.scene.add(this.sphereRay)
+    // Debug
+    // this.sphereRay = new THREE.Mesh(
+    //   new THREE.SphereBufferGeometry(0.1, 10, 10),
+    //   new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true })
+    // )
+    // this.sphereRay.name = 'sphereRay'
+    // this.scene.add(this.sphereRay)
 
     window.addEventListener('pointermove', this.onPointerMove)
   }

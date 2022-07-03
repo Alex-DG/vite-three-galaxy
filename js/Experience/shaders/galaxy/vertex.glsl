@@ -1,5 +1,6 @@
 uniform float uTime;
 uniform float uSize;
+uniform float uAmplitude;
 uniform vec2 uPixels;
 uniform vec3 uMouse;
 
@@ -155,10 +156,11 @@ vec3 getOffset(vec3 p) {
   vec3 tempPosition = rotation3dY(uTime * (0.5 + 0.5 * twist_scale) + length(aPositions.xz)) * p;
   vec3 offset = fbm_vec3(aPositions, 0.5, 0.0);
   
-  return offset * 0.3;
+  return offset * 0.3 * uAmplitude;
 }
 
-float particleSpread = 0.05;
+float particleSpread = 0.07;
+float radiusMouse = 0.12;
 
 void main() {
   // Calculate particle size
@@ -173,13 +175,15 @@ void main() {
   vec3 finalOffset = offset + offset0;
 
   // Calculate particle mesh position
-  vec3 particlesPosition = (modelMatrix * vec4(worldPosition + finalOffset, 1.0)).xyz;
+  vec3 particlePosition = (modelMatrix * vec4(worldPosition + finalOffset, 1.0)).xyz;
   
-  float distanceToMouse = pow(1.0 - clamp(length(uMouse.xz - particlesPosition.xz) -0.2,0.,1.), 2.);
-  particlesPosition.y += distanceToMouse * 0.2;
+  float distanceToMouse = pow(1.0 - clamp(length(uMouse.xz - particlePosition.xz) -0.3,0.,1.), 4.);
+  vec3 direction = particlePosition - uMouse;
+  // particlePosition.y += distanceToMouse * 0.2;
+  particlePosition = mix(particlePosition, uMouse + normalize(direction) * radiusMouse, distanceToMouse);
 
   // Add position
-  vec4 viewPosition = viewMatrix * vec4(particlesPosition, 1.0);
+  vec4 viewPosition = viewMatrix * vec4(particlePosition, 1.0);
   viewPosition.xyz += position * uSize * (0.01 + particleSpread * particleSize);
 
   
