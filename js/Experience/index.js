@@ -19,19 +19,27 @@ class Experience {
     this.layers = [
       {
         minRadius: 0.3,
-        maxRadius: 1.45,
+        maxRadius: 1.5,
         color: '#f7b373',
         size: 1,
         count: 10000,
         amplitude: 1,
+        spin: 3,
+        branches: -3,
+        randomness: 0.2,
+        randomnessPower: 3,
       },
       {
-        minRadius: 0.3,
-        maxRadius: 1.5,
+        minRadius: 0.4,
+        maxRadius: 1.6,
         color: '#88b3ce',
         size: 0.7,
         count: 10000,
         amplitude: 2,
+        spin: 6,
+        branches: 3,
+        randomness: 0.25,
+        randomnessPower: 3,
       },
     ]
 
@@ -99,10 +107,37 @@ class Experience {
       const theta = Math.random() * Math.PI * 2 // angle
       const radius = lerp(minRadius, maxRadius, Math.random())
 
-      const x = radius * Math.sin(theta)
-      const y = (Math.random() - 0.5) * 0.05
-      const z = radius * Math.cos(theta)
+      const spinAngle = radius * layer.spin
+      const branchAngle = ((i % layer.branches) / layer.branches) * theta
+
+      const randomX =
+        Math.pow(Math.random(), layer.randomnessPower) *
+        (Math.random() < 0.5 ? 1 : -1) *
+        layer.randomness *
+        radius
+      const randomY =
+        Math.pow(Math.random(), layer.randomnessPower) *
+        (Math.random() < 0.5 ? 1 : -1) *
+        layer.randomness *
+        radius
+      const randomZ =
+        Math.pow(Math.random(), layer.randomnessPower) *
+        (Math.random() < 0.5 ? 1 : -1) *
+        layer.randomness *
+        radius
+
+      const x = radius * Math.sin(branchAngle + spinAngle) + randomX
+      const y = randomY //(Math.random() - 0.5) * 0.05
+      const z = radius * Math.cos(branchAngle + spinAngle) + randomZ
       positions.set([x, y, z], i * 3)
+
+      // const theta = Math.random() * Math.PI * 2 // angle
+      // const radius = lerp(minRadius, maxRadius, Math.random())
+
+      // const x = radius * Math.sin(theta)
+      // const y = (Math.random() - 0.5) * 0.05
+      // const z = radius * Math.cos(theta)
+      // positions.set([x, y, z], i * 3)
     }
 
     this.galaxyGeometry.setAttribute(
@@ -125,9 +160,10 @@ class Experience {
         uResolution: { value: new THREE.Vector4() },
       },
       // wireframe: true,
-      transparent: true,
-      depthTest: false,
+      // sizeAttenuation: true,
+      depthWrite: false,
       blending: THREE.AdditiveBlending,
+      vertexColors: true,
       vertexShader: galaxyVertex,
       fragmentShader: galaxyFragment,
     })
@@ -152,10 +188,7 @@ class Experience {
 
     // calculate objects intersecting the picking ray
     const intersects = this.raycaster.intersectObjects([this.planeRay])
-    console.log({ intersects })
     if (intersects[0]) {
-      // intersects[i].object.material.color.set(0xff0000)
-      console.log('intersects >', { intersects })
       this.sphereRay?.position.copy(intersects[0].point)
       this.point.copy(intersects[0].point)
     }
@@ -232,7 +265,6 @@ class Experience {
   setResize() {
     window.addEventListener('resize', this.resize)
   }
-
   setGalaxy() {
     this.layers.forEach((layer) => this.addLayer(layer))
   }

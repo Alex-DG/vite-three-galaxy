@@ -177,16 +177,14 @@ void main() {
   // Calculate particle mesh position
   vec3 particlePosition = (modelMatrix * vec4(worldPosition + finalOffset, 1.0)).xyz;
   
+  // Mouse interaction
   float distanceToMouse = pow(1.0 - clamp(length(uMouse.xz - particlePosition.xz) -0.3,0.,1.), 4.);
   vec3 direction = particlePosition - uMouse;
-  // particlePosition.y += distanceToMouse * 0.2;
   particlePosition = mix(particlePosition, uMouse + normalize(direction) * radiusMouse, distanceToMouse);
 
   // Add position
   vec4 viewPosition = viewMatrix * vec4(particlePosition, 1.0);
   viewPosition.xyz += position * uSize * (0.01 + particleSpread * particleSize);
-
-  
 
   gl_Position = projectionMatrix * viewPosition;
 
