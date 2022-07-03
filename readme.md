@@ -2,7 +2,7 @@
 
 Generating a galaxy of particles with Three.js 🌌
 
-[Live Demove](https://vite-three-galaxy.vercel.app/)
+[Live Demo](https://vite-three-galaxy.vercel.app/)
 
 ## Setup
 
